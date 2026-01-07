@@ -66,13 +66,24 @@ def detailed_report():
         print(f"Generating detailed report for scan: {data['scan'].get('document_control_number', 'unknown')}")
         report_path = generate_detailed_report(data)
         
-        # Send file
-        return send_file(
-            report_path,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            download_name=f"Detailed_Report_{data['scan'].get('document_control_number', 'report')}.xlsx"
+        # Read file into memory and cleanup immediately
+        try:
+            with open(report_path, 'rb') as f:
+                file_data = f.read()
+            os.unlink(report_path)  # Delete temp file immediately
+        except Exception as e:
+            if os.path.exists(report_path):
+                os.unlink(report_path)
+            raise
+        
+        # Send file from memory
+        from flask import Response
+        response = Response(
+            file_data,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
+        response.headers['Content-Disposition'] = f'attachment; filename="Detailed_Report_{data["scan"].get("document_control_number", "report")}.xlsx"'
+        return response
         
     except Exception as e:
         print(f"Error generating detailed report: {str(e)}")
@@ -110,13 +121,24 @@ def executive_report():
         print(f"Generating executive report for scan: {data['scan'].get('document_control_number', 'unknown')}")
         report_path = generate_executive_report(data)
         
-        # Send file
-        return send_file(
-            report_path,
-            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            as_attachment=True,
-            download_name=f"Executive_Report_{data['scan'].get('document_control_number', 'report')}.docx"
+        # Read file into memory and cleanup immediately
+        try:
+            with open(report_path, 'rb') as f:
+                file_data = f.read()
+            os.unlink(report_path)  # Delete temp file immediately
+        except Exception as e:
+            if os.path.exists(report_path):
+                os.unlink(report_path)
+            raise
+        
+        # Send file from memory
+        from flask import Response
+        response = Response(
+            file_data,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         )
+        response.headers['Content-Disposition'] = f'attachment; filename="Executive_Report_{data["scan"].get("document_control_number", "report")}.docx"'
+        return response
         
     except Exception as e:
         print(f"Error generating executive report: {str(e)}")
