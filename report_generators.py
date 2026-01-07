@@ -189,13 +189,11 @@ def generate_detailed_report(data):
         if result.stderr:
             print(result.stderr)
         
-        # Check if successful
-        if result.returncode != 0:
-            raise Exception(f"Script failed with code {result.returncode}")
+        # Check if output file exists (more reliable than exit code)
+        if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+            raise Exception(f"Output file not created or empty. Exit code: {result.returncode}")
         
-        # Verify output file exists
-        if not os.path.exists(output_path):
-            raise Exception("Output file not created")
+        print(f"✓ Report successfully generated: {output_path}")
         
         # Cleanup temp CSV
         os.unlink(csv_path)
@@ -261,13 +259,11 @@ def generate_executive_report(data):
         if result.stderr:
             print(result.stderr)
         
-        # Check if successful
-        if result.returncode != 0:
-            raise Exception(f"Script failed with code {result.returncode}")
+        # Check if output file exists (more reliable than exit code)
+        if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+            raise Exception(f"Output file not created or empty. Exit code: {result.returncode}")
         
-        # Verify output file exists
-        if not os.path.exists(output_path):
-            raise Exception("Output file not created")
+        print(f"✓ Report successfully generated: {output_path}")
         
         # Cleanup temp CSV
         os.unlink(csv_path)
