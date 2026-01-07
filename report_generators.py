@@ -136,7 +136,7 @@ def json_to_qualys_csv(data):
         escaped_row = [f'"{str(field).replace(chr(34), chr(34)+chr(34))}"' for field in row]
         lines.append(','.join(escaped_row))
     
-    return '\\n'.join(lines)
+    return '\n'.join(lines)  # FIXED: single backslash for actual newline
 
 
 def generate_detailed_report(data):
