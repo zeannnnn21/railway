@@ -1,14 +1,13 @@
 """
 Report generation functions
-Adapted from existing Python scripts to work with JSON input
+Calls existing Python scripts via subprocess
 """
 
 import tempfile
 import os
 from pathlib import Path
-import pandas as pd
 from datetime import datetime
-import io
+import subprocess
 
 def json_to_qualys_csv(data):
     """
@@ -137,12 +136,12 @@ def json_to_qualys_csv(data):
         escaped_row = [f'"{str(field).replace(chr(34), chr(34)+chr(34))}"' for field in row]
         lines.append(','.join(escaped_row))
     
-    return '\n'.join(lines)
+    return '\\n'.join(lines)
 
 
 def generate_detailed_report(data):
     """
-    Generate detailed Excel report from JSON data
+    Generate detailed Excel report from JSON data using the Python script
     
     Args:
         data: Dict with scan data
@@ -150,6 +149,9 @@ def generate_detailed_report(data):
     Returns:
         str: Path to generated Excel file
     """
+    print(f"Generating detailed report for scan: {data['scan'].get('document_control_number', 'unknown')}")
+    print("=" * 60)
+    
     # Convert JSON to CSV
     csv_content = json_to_qualys_csv(data)
     
@@ -158,7 +160,11 @@ def generate_detailed_report(data):
         csv_file.write(csv_content)
         csv_path = csv_file.name
     
-    # Get template path
+    print(f"Processing: {csv_path}")
+    print("=" * 60)
+    
+    # Get paths
+    script_path = Path(__file__).parent / 'scripts' / 'qualys_report_automation_v3_2.py'
     template_path = Path(__file__).parent / 'templates' / 'Template.xlsx'
     
     # Create output file
@@ -166,26 +172,30 @@ def generate_detailed_report(data):
     output_path = output_file.name
     output_file.close()
     
-    # Import and run the existing detailed report script logic
-    # For now, using a simplified version - you'll need to adapt the full script
-    import sys
-    sys.path.append(str(Path(__file__).parent / 'scripts'))
+    business_unit = data.get('businessUnit', data['scan'].get('client_business_unit', 'Unknown'))
     
     try:
-        from qualys_report_automation_v3_2 import QualysReportAutomation
-        
-        automation = QualysReportAutomation()
-        business_unit = data['scan'].get('client_business_unit', 'Unknown')
-        
-        success = automation.fill_vulnerability_details(
-            str(template_path),
-            csv_path,
-            output_path,
-            business_unit
+        # Call Python script directly
+        result = subprocess.run(
+            ['python', str(script_path), csv_path, str(template_path), output_path, business_unit],
+            capture_output=True,
+            text=True,
+            timeout=180
         )
         
-        if not success:
-            raise Exception("Report generation failed")
+        # Print script output
+        if result.stdout:
+            print(result.stdout)
+        if result.stderr:
+            print(result.stderr)
+        
+        # Check if successful
+        if result.returncode != 0:
+            raise Exception(f"Script failed with code {result.returncode}")
+        
+        # Verify output file exists
+        if not os.path.exists(output_path):
+            raise Exception("Output file not created")
         
         # Cleanup temp CSV
         os.unlink(csv_path)
@@ -203,7 +213,7 @@ def generate_detailed_report(data):
 
 def generate_executive_report(data):
     """
-    Generate executive Word report from JSON data
+    Generate executive Word report from JSON data using the Python script
     
     Args:
         data: Dict with scan data
@@ -211,6 +221,9 @@ def generate_executive_report(data):
     Returns:
         str: Path to generated Word file
     """
+    print(f"Generating executive report for scan: {data['scan'].get('document_control_number', 'unknown')}")
+    print("=" * 60)
+    
     # Convert JSON to CSV
     csv_content = json_to_qualys_csv(data)
     
@@ -219,7 +232,11 @@ def generate_executive_report(data):
         csv_file.write(csv_content)
         csv_path = csv_file.name
     
-    # Get template path
+    print(f"Processing: {csv_path}")
+    print("=" * 60)
+    
+    # Get paths
+    script_path = Path(__file__).parent / 'scripts' / 'executive_report_automation_v1_5.py'
     template_path = Path(__file__).parent / 'templates' / 'Report-Template-with-Chart.docx'
     
     # Create output file
@@ -227,25 +244,30 @@ def generate_executive_report(data):
     output_path = output_file.name
     output_file.close()
     
-    # Import and run the existing executive report script logic
-    import sys
-    sys.path.append(str(Path(__file__).parent / 'scripts'))
+    client_name = data.get('clientName', data['scan'].get('client_business_unit', 'Unknown Client'))
     
     try:
-        from executive_report_automation_v1_5 import ExecutiveReportAutomation
-        
-        automation = ExecutiveReportAutomation()
-        client_name = data.get('clientName', data['scan'].get('client_business_unit', 'Unknown Client'))
-        
-        success = automation.generate_report(
-            csv_path,
-            str(template_path),
-            output_path,
-            client_name
+        # Call Python script directly
+        result = subprocess.run(
+            ['python', str(script_path), csv_path, str(template_path), output_path, client_name],
+            capture_output=True,
+            text=True,
+            timeout=180
         )
         
-        if not success:
-            raise Exception("Report generation failed")
+        # Print script output
+        if result.stdout:
+            print(result.stdout)
+        if result.stderr:
+            print(result.stderr)
+        
+        # Check if successful
+        if result.returncode != 0:
+            raise Exception(f"Script failed with code {result.returncode}")
+        
+        # Verify output file exists
+        if not os.path.exists(output_path):
+            raise Exception("Output file not created")
         
         # Cleanup temp CSV
         os.unlink(csv_path)
